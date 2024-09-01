@@ -3,7 +3,7 @@ self.addEventListener('install', (event) => {
         caches.open('nutriens_proof_of_concept').then((cache) => {
             return cache.addAll([
                 '/',
-                '/index.html'
+                '/nutrients-tracker/index.html'
             ]);
         })
     );
