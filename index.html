@@ -125,6 +125,7 @@
 		log('Logging function parsed')
 
 		function local_storage_available() {
+			// https://developer.mozilla.org/en-US/docs/Web/API/Web_Storage_API/Using_the_Web_Storage_API
 			const type = 'localStorage';
 			let storage;
 			try {
@@ -229,6 +230,7 @@
 				window.localStorage.removeItem(this.key_consumables);
 				
 				// TODO create a csv from consumables added previouly
+				// https://www.geeksforgeeks.org/how-to-create-and-download-csv-file-in-javascript/
 				// save the csv as string at recent_flush 
 			}
 
