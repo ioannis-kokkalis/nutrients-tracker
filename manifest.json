@@ -1,6 +1,6 @@
 {
     "name": "NC",
     "short_name": "NC",
-    "start_url": "/",
+    "start_url": "/nutrients-tracker/",
     "display": "standalone"
 }
