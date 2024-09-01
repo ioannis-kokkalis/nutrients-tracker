@@ -1,0 +1,450 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta charset="UTF-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+	<title>Nutrients Counter</title>
+
+	<style>
+		* {
+			margin: 0;
+			box-sizing: border-box;
+		}
+
+		html {
+			word-break: break-all;
+		}
+
+		body {
+			display: flex;
+			flex-direction: column;
+			justify-content: center;
+			gap: 1rem;
+
+			height: 100%;
+			min-height: 100dvh;
+			width: 100%;
+			max-width: 30rem;
+			
+			margin: auto;
+			padding: 1rem;
+		}
+
+		dialog {
+			margin: auto;
+
+			&::backdrop {
+				background-color: #000;
+				opacity: 0.7;
+			}
+		}
+
+		dialog.consumed[open] {
+			display: flex;
+			flex-direction: column;
+			gap: 1rem;
+			padding: 1rem;
+		}
+
+		form {
+			display: flex;
+			flex-direction: column;
+			justify-content: center;
+			gap: 1rem;
+		}
+
+		button {
+			padding: .5rem;
+			border-radius: 1rem;
+		}
+
+		fieldset {
+			display: flex;
+			flex-direction: column;
+			gap: .5rem;
+
+			padding: 1rem;
+
+			
+		}
+
+		details.consumedd[open] {
+			& > .fieldsets {
+				display: flex;
+				flex-direction: column;
+				gap: 1rem;
+			}
+		}
+
+		label {
+			display: flex;
+			flex-direction: row;
+			align-items: center;
+			justify-content: space-between;
+		}
+
+		input {
+			padding: .75rem;
+			width: clamp(3rem, 100%, 100%);
+			text-align: center;
+		}
+
+		input::placeholder {
+			opacity: .4;
+		}
+
+		#consumed_container {
+			display: flex;
+			flex-direction: column;
+			gap: 1rem;
+
+			&:not(:has(.consumed)) {
+				display: none;
+			}
+		}
+		
+		#consumed_list {
+			background-color: #f3f3f3;
+
+			&>*:nth-child(even) {
+				background-color: #e4e4e4;
+			}
+		}
+
+		.consumed {
+			padding: 1.5rem;
+		}
+	</style>
+
+	<script>
+		function log(message) {
+			console.log((new Date()).toISOString() + " -> | " + message + " |");
+		}
+
+		log('Logging function parsed')
+
+		function local_storage_available() {
+			const type = 'localStorage';
+			let storage;
+			try {
+				storage = window[type];
+				const x = "__storage_test__";
+				storage.setItem(x, x);
+				storage.removeItem(x);
+				return true;
+			}
+			catch (e) {
+				return (
+					e instanceof DOMException &&
+					e.name === "QuotaExceededError" &&
+					// acknowledge QuotaExceededError only if there's something already stored
+					storage &&
+					storage.length !== 0
+				);
+			}
+		}
+	</script>
+</head>
+<body>
+	<script>
+		class Field {
+			
+			static init(name, unit, amount) {
+				if( amount == '' ) {
+					return false;
+				}
+
+				return new Field(name, unit, Number(amount));
+			}
+
+			name;
+			unit;
+			amount;
+
+			constructor(name, unit, amount) {
+				this.name = name;
+				this.unit = unit;
+				this.amount = amount;
+			}
+
+		}
+
+		class Label {
+			
+			fields;
+
+			constructor(...fields) {
+				this.fields = fields;
+			}
+
+		}
+
+		class Consumable {
+
+			label;
+
+			constructor(label) {
+				this.label = label;
+			}
+
+		}
+
+		class Stomach {
+
+			static init() {
+				var stomach;
+				try { stomach = new Stomach(); }
+				catch (error) { stomach = undefined; }
+				return stomach;
+			}
+
+			key_consumables = 'nc20240831125840';
+			key_recent_flush = 'nc20240831125843';
+
+			constructor() {
+				if( !local_storage_available() ) {
+					throw new Error('Device local storage is not available');
+				}
+			}
+
+			add(id, consumable) {
+				const consumables = JSON.parse(window.localStorage.getItem(this.key_consumables) ?? '{}');
+				consumables[id] = consumable;
+				window.localStorage.setItem(this.key_consumables, JSON.stringify(consumables));
+			}
+
+			remove(id) {
+				const consumables = JSON.parse(window.localStorage.getItem(this.key_consumables) ?? '{}');
+				delete consumables[id];
+				window.localStorage.setItem(this.key_consumables, JSON.stringify(consumables));
+			}
+
+			already_consumed() {
+				return JSON.parse(window.localStorage.getItem(this.key_consumables) ?? '{}');
+			}
+
+			flush() {
+				const consumables = JSON.parse(window.localStorage.getItem(this.key_consumables) ?? '{}');
+				window.localStorage.removeItem(this.key_consumables);
+				
+				// TODO create a csv from consumables added previouly
+				// save the csv as string at recent_flush 
+			}
+
+			recent_flush() {
+				// return recent_flush string
+			}
+
+		}
+
+		// ---
+
+		const stomach = Stomach.init();
+
+		if( !stomach ) {
+			log('Stomach unavailable');
+			const dialog_unavailable_stomach = document.body.appendChild(document.createElement('dialog'));
+			dialog_unavailable_stomach.innerHTML = 'This device does not support mandatory features sorry.';
+			dialog_unavailable_stomach.showModal();
+		}
+		else {
+			log('Stomach available');
+		}
+		
+		// ===
+
+		const ui_update = {
+
+			reload_consumed_consumables: function() {
+				document.getElementById('consumed_list').replaceChildren();
+
+				Object.entries(stomach.already_consumed()).forEach((entry) => {
+					const consumable = entry.pop();
+					const id = entry.pop();
+					ui_update.consumed(id, consumable, false);
+				});
+
+				this.accumulate_consumed_fields();
+			},
+
+			accumulate_consumed_fields: function() {
+				const total_cals = document.getElementById('total_cal');
+				total_cals.value = 0;
+				const total_proteins = document.getElementById('total_proteins');
+				total_proteins.value = 0;
+				const total_fats = document.getElementById('total_fats');
+				total_fats.value = 0;
+				const total_carbs = document.getElementById('total_carbs');
+				total_carbs.value = 0;
+
+				Object.entries(stomach.already_consumed()).forEach((entry) => {
+					const consumable = entry.pop();
+					const id = entry.pop();
+					consumable.label.fields.forEach((field) => {
+						switch(field.name) {
+							case 'calories':
+								total_cals.value = Number(total_cals.value) + Number(field.amount);
+								break;
+							case 'proteins':
+								total_proteins.value = Number(total_proteins.value) + Number(field.amount);
+								break;
+							case 'fats':
+								total_fats.value = Number(total_fats.value) + Number(field.amount);
+								break;
+							case 'carbohydrates':
+								total_carbs.value = Number(total_carbs.value) + Number(field.amount);
+								break;
+						}
+					});
+				});
+			},
+
+			consumed: function(id, consumable, notification = true) {
+				const consumed_list = document.getElementById('consumed_list');
+				const consumed_for_DOM = consumed_list.insertBefore(document.createElement('div'), consumed_list.firstChild);
+
+				consumed_for_DOM.innerText = '';
+
+				consumable.label.fields.forEach((field) => {
+					consumed_for_DOM.innerHTML += `<h3>${field.name}: ${field.amount} (${field.unit})<br></h3>`;
+				});
+
+				const button_delete = consumed_for_DOM.appendChild(document.createElement('button'));
+				button_delete.innerText = 'Delete';
+				button_delete.addEventListener('click', (event) => {
+					stomach.remove(id);
+					this.reload_consumed_consumables();
+				});
+
+				consumed_for_DOM.classList.add('consumed');
+
+				if( notification ) {
+					const dialog_consumed = document.body.appendChild(document.createElement('dialog'));
+					dialog_consumed.className = 'consumed';
+					dialog_consumed.innerHTML = '<h2>Consumed!</h2>';
+	
+					const dialog_consumed_close = dialog_consumed.appendChild(document.createElement('button'));
+	
+					dialog_consumed_close.innerText = 'Okey';
+					dialog_consumed_close.addEventListener('click', (event) => dialog_consumed.close());
+	
+					dialog_consumed.showModal();
+				}
+
+				this.accumulate_consumed_fields();
+			}
+
+		};
+	</script>
+
+	<form id="foooorm">
+		<h1 style="text-align: center;">Consumable</h1>
+		<fieldset>
+			<label for="calories"><h3>Calories</h3><h5>kcal</h5></label>
+			<input placeholder="230.3" type="number" step="0.01" min="0" id="calories" name="calories" required>
+		</fieldset>
+		<fieldset>
+			<label for="proteins"><h3>Proteins</h3><h5>g</h5></label>
+			<input placeholder="9.1" type="number" step="0.01" min="0" id="proteins" name="proteins">
+		</fieldset>
+		<fieldset>
+			<label for="fats"><h3>Fats</h3><h5>g</h5></label>
+			<input placeholder="24.7" type="number" step="0.01" min="0" id="fats" name="fats">
+		</fieldset>
+		<fieldset>
+			<label for="carbohydrates"><h3>Carbohydrates</h3><h5>g</h5></label>
+			<input placeholder="67.9" type="number" step="0.01" min="0" id="carbohydrates" name="carbohydrates">
+		</fieldset>
+		<button type="submit">Consume</button>
+	</form>
+
+	<div id="consumed_container">
+		<hr>
+		<h1 style="text-align: center;">Consumed</h1>
+		<details class="consumedd">
+			<summary>Totals</summary>
+			<div class="fieldsets">
+				<fieldset><legend>Total Calories (kcal):</legend> <input type="number" id="total_cal" disabled></fieldset>
+				<fieldset><legend>Total Proteins (g): </legend> <input type="number" id="total_proteins" disabled></fieldset>
+				<fieldset><legend>Total Fats (g): </legend> <input type="number" id="total_fats" disabled></fieldset>
+				<fieldset><legend>Total Carbohydrates (g): </legend> <input type="number" id="total_carbs" disabled></fieldset>
+			</div>
+		</details>
+		<div id="consumed_list">
+		</div>
+		<button id="button_flush">Flush</button>
+	</div>
+
+	<script>
+		if( stomach ) {
+			document.getElementById('foooorm').addEventListener('submit', function(event) {
+				event.preventDefault();
+
+				const form_data = new FormData(this);
+
+				const fields = [];
+
+				const fields_data = [
+					['calories', 'kcal', form_data.get('calories')],
+					['proteins', 'g', form_data.get('proteins')],
+					['fats', 'g', form_data.get('fats')],
+					['carbohydrates', 'g', form_data.get('carbohydrates')],
+				];
+				
+				fields_data.forEach((field_data) => {
+					const field = Field.init(...field_data);
+
+					if( field ) {
+						fields.push(field);
+					}
+				});
+
+				const consumable = new Consumable(new Label(...fields));
+				const id = (new Date()).getTime();
+
+				stomach.add(id, consumable);
+
+				ui_update.consumed(id, consumable);
+
+				this.reset();
+			});
+
+			ui_update.reload_consumed_consumables();
+
+			button_flush.addEventListener('click', (event) => {
+				stomach.flush();
+
+				const dialog_flushed = document.body.appendChild(document.createElement('dialog'));
+				dialog_flushed.className = 'consumed';
+				dialog_flushed.innerHTML = '<h2>Flushed...</h2>';
+
+				const total_cals = document.getElementById('total_cal');
+				dialog_flushed.innerHTML += `<h2>Total Calories: ${total_cals.value} (kcal)<br></h2>`;
+				const total_proteins = document.getElementById('total_proteins');
+				dialog_flushed.innerHTML += `<h2>Total Proteins: ${total_proteins.value} (g)<br></h2>`;
+				const total_fats = document.getElementById('total_fats');
+				dialog_flushed.innerHTML += `<h2>Total Fats: ${total_fats.value} (g)<br></h2>`;
+				const total_carbs = document.getElementById('total_carbs');
+				dialog_flushed.innerHTML += `<h2>Total Carbs: ${total_carbs.value} (g)<br></h2>`;
+
+				const dialog_flushed_close = dialog_flushed.appendChild(document.createElement('button'));
+
+				dialog_flushed_close.innerText = 'Okey';
+				dialog_flushed_close.addEventListener('click', (event) => dialog_flushed.close());
+
+				dialog_flushed.showModal();
+
+				ui_update.reload_consumed_consumables();
+			});
+		}
+	</script>
+	
+	<script>
+		if ('serviceWorker' in navigator) {
+			navigator.serviceWorker.register('/sw.js')
+				.then(() => console.log('Service Worker Registered'));
+		}
+	</script>
+</body>
+</html>
