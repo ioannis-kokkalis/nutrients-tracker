@@ -1,6 +1,14 @@
 {
-    "name": "NC",
-    "short_name": "NC",
+    "name": "Nutrients Tracker",
+    "short_name": "Nutracker",
     "start_url": "/nutrients-tracker/",
-    "display": "standalone"
+    "display": "standalone",
+    "icons": [
+        {
+            "src": "/nutrients-tracker/assets/icons/general.svg",
+            "type": "image/svg+xml",
+            "sizes": "any",
+            "purpose": "any"
+        }
+    ]
 }
