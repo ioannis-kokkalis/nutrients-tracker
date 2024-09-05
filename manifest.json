@@ -1,14 +1,38 @@
 {
-    "name": "Nutrients Tracker",
-    "short_name": "Nutracker",
-    "start_url": "/nutrients-tracker/",
-    "display": "standalone",
-    "icons": [
-        {
-            "src": "/nutrients-tracker/assets/icons/general.svg",
-            "type": "image/svg+xml",
-            "sizes": "any",
-            "purpose": "any"
-        }
-    ]
+	"name": "Nutrients Tracker",
+	"short_name": "Nutracker",
+	"description": "Track the nutrients in what you eat!",
+	"start_url": "./",
+	"display": "standalone",
+	"orientation": "portrait",
+	"icons": [
+		{
+			"src": "./assets/icons/logo.svg",
+			"type": "image/svg+xml",
+			"sizes": "any",
+			"purpose": "any"
+		},
+		{
+			"src": "./assets/icons/logo-maskable.svg",
+			"type": "image/svg+xml",
+			"sizes": "any",
+			"purpose": "maskable"
+		}
+	],
+	"screenshots": [
+		{
+			"src": "./assets/screenshots/installation/wide.svg",
+			"sizes": "800x400",
+			"type": "image/svg+xml",
+			"form_factor": "wide",
+			"label": "Wide screenshot placeholder..."
+		},
+		{
+			"src": "./assets/screenshots/installation/narrow.svg",
+			"sizes": "400x800",
+			"type": "image/svg+xml",
+			"form_factor": "narrow",
+			"label": "Narrow screenshot placeholder..."
+		}
+	]
 }

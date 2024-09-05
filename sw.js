@@ -2,8 +2,9 @@ self.addEventListener('install', (event) => {
     event.waitUntil(
         caches.open('nutriens_proof_of_concept').then((cache) => {
             return cache.addAll([
-                '/nutrients-tracker/',
-                '/nutrients-tracker/index.html'
+                './',
+                './index.html',
+                './assets/icons/logo.svg',
             ]);
         })
     );
