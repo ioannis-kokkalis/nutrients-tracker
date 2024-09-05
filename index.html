@@ -301,6 +301,11 @@
 						}
 					});
 				});
+
+				total_cals.value = Math.round(total_cals.value * 100) / 100;
+				total_proteins.value = Math.round(total_proteins.value * 100) / 100;
+				total_fats.value = Math.round(total_fats.value * 100) / 100;
+				total_carbs.value = Math.round(total_carbs.value * 100) / 100;
 			},
 
 			consumed: function(id, consumable, notification = true) {
@@ -344,6 +349,10 @@
 	<form id="foooorm">
 		<h1 style="text-align: center;">Consumable</h1>
 		<fieldset>
+			<label for="amount"><h3 style="text-decoration:underline;">Amount</h3><h5>g</h5></label>
+			<input type="number" step="0.01" min="0" id="amount" name="amount" value="100" required>
+		</fieldset>
+		<fieldset>
 			<label for="calories"><h3>Calories</h3><h5>kcal</h5></label>
 			<input placeholder="230.3" type="number" step="0.01" min="0" id="calories" name="calories" required>
 		</fieldset>
@@ -380,8 +389,10 @@
 	</div>
 
 	<script>
+		const form = document.getElementById('foooorm');
+
 		if( stomach ) {
-			document.getElementById('foooorm').addEventListener('submit', function(event) {
+			form.addEventListener('submit', function(event) {
 				event.preventDefault();
 
 				const form_data = new FormData(this);
@@ -441,11 +452,36 @@
 				ui_update.reload_consumed_consumables();
 			});
 		}
+	
+		document.getElementById('amount').addEventListener('change', (event) => {
+			const target = event.target;
+			const value = Number(target.value);
+			
+			if( value == 0 ) {
+				target.value = target.defaultValue;
+				target.dispatchEvent(new Event('change'));
+				return;
+			}
+
+			const value_prev = Number(target.getAttribute('value-prev') ?? target.defaultValue);
+			target.setAttribute('value-prev', value);
+
+			const scale = value / value_prev;
+
+			Array.from(form.elements).forEach((input) => {
+				if( input == target ) {
+					return;
+				}
+
+				const value_scaled = Math.round(input.value * scale * 100) / 100;
+				input.value = value_scaled == 0 ? '' : value_scaled;
+			});
+		});
 	</script>
 	
 	<script>
 		if ('serviceWorker' in navigator) {
-			navigator.serviceWorker.register('/nutrients-tracker/sw.js')
+			navigator.serviceWorker.register('./sw.js')
 				.then(() => console.log('Service Worker Registered'));
 		}
 	</script>
