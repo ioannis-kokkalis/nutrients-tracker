@@ -354,7 +354,7 @@
 		</fieldset>
 		<fieldset>
 			<label for="calories"><h3>Calories</h3><h5>kcal</h5></label>
-			<input placeholder="230.3" type="number" step="0.01" min="0" id="calories" name="calories" required>
+			<input placeholder="230.4" type="number" step="0.01" min="0" id="calories" name="calories" required>
 		</fieldset>
 		<fieldset>
 			<label for="proteins"><h3>Proteins</h3><h5>g</h5></label>
@@ -422,6 +422,10 @@
 				ui_update.consumed(id, consumable);
 
 				this.reset();
+			});
+
+			form.addEventListener('reset', (event) => {
+				document.getElementById('amount').removeAttribute('value-prev');
 			});
 
 			ui_update.reload_consumed_consumables();
